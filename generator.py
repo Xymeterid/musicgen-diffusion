@@ -4,7 +4,8 @@ from denoising_diffusion_pytorch import Unet1D, GaussianDiffusion1D
 from data_conversion import token_sequence_to_events, event_sequence_to_midi
 from midi_dataset import MIDIDataset
 
-dataset = MIDIDataset(data_root=None, saved_data_path='midi_dataset.pth')
+dataset = MIDIDataset(data_root=None, saved_data_path='midi_dataset_2.pth')
+
 model = Unet1D(
     dim=64,
     dim_mults=(1, 2, 4, 8)

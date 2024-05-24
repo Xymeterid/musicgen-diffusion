@@ -1,9 +1,9 @@
 import pretty_midi
 
 TIME_SHIFT_RESOLUTION = 0.01
-NOTE_ON_FLAG = 0
-NOTE_OFF_FLAG = 128
-TIME_SHIFT_FLAG = 256
+NOTE_ON_FLAG = 0.0
+NOTE_OFF_FLAG = 128.0
+TIME_SHIFT_FLAG = 256.0
 
 
 def midi_to_event_sequence(midi_file_path):
@@ -11,7 +11,7 @@ def midi_to_event_sequence(midi_file_path):
     events = []
     for instrument in midi_data.instruments:
         for note in instrument.notes:
-            events.append(('note_on', note.start, note.pitch, note.velocity))
+            events.append(('note_on', note.start, note.pitch))
             events.append(('note_off', note.end, note.pitch))
     events.sort(key=lambda x: x[1])
 
@@ -27,6 +27,10 @@ def midi_to_event_sequence(midi_file_path):
                 event_sequence.append(('time_shift', TIME_SHIFT_RESOLUTION))
         event_sequence.append(event)
         last_time = event_time
+
+        if len(event_sequence) > 10000:
+            return event_sequence
+
     return event_sequence
 
 
@@ -77,14 +81,13 @@ def event_sequence_to_midi(event_sequence, output_midi_file_path):
                     ongoing_notes[note_pitch] = (note_start_time, velocity, duration)
 
         elif event_type == 'note_on':
-            note_pitch = event[2]
-            note_velocity = event[3] if len(event) > 3 else VELOCITY_BASE
-            ongoing_notes[note_pitch] = (current_time, note_velocity, 0)
+            note_pitch = event[1]
+            ongoing_notes[note_pitch] = (current_time, VELOCITY_BASE, 0)
 
         elif event_type == 'note_off':
-            note_pitch = event[2]
+            note_pitch = event[1]
             if note_pitch in ongoing_notes:
-                start_time, velocity = ongoing_notes.pop(note_pitch)
+                start_time, velocity, _ = ongoing_notes.pop(note_pitch)
                 end_time = current_time
                 note = pretty_midi.Note(
                     velocity=velocity,

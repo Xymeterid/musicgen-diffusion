@@ -20,7 +20,9 @@ class MIDIDataset(Dataset):
                 token_sequence = events_to_token_sequence(event_sequence)
                 self.sequences.append(torch.tensor(token_sequence, dtype=torch.long))
 
-        self.max_length = max(len(seq) for seq in self.sequences)
+        max_length = max(len(seq) for seq in self.sequences)
+        # Make sure that length is divisible by 16
+        self.max_length = max_length + 16 - (max_length % 16)
 
     def __len__(self):
         return len(self.sequences)

@@ -6,12 +6,16 @@ from midi_dataset import MIDIDataset
 
 NUM_EPOCHS = 10
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
+
 dataset = MIDIDataset(data_root=None, saved_data_path='midi_dataset.pth')
 loader = dataset.get_data_loader(batch_size=32)
 
 model = Unet1D(
     dim=64,
-    dim_mults=(1, 2, 4, 8)
+    dim_mults=(1, 2, 4, 8),
+    channels=1
 )
 
 diffusion = GaussianDiffusion1D(
@@ -28,6 +32,7 @@ for epoch in range(NUM_EPOCHS):
     generated_histograms = []
 
     for index, data in enumerate(loader):
+        data = data.float()
         loss = diffusion(data)
         optimizer.zero_grad()
         loss.backward()

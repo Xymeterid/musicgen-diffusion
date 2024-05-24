@@ -5,7 +5,7 @@ from data_conversion import token_sequence_to_events
 
 
 def extract_note_list_from_sample(sample):
-    sample_events = token_sequence_to_events(sample.toList())
+    sample_events = token_sequence_to_events(sample.tolist()[0])
     return [event[1] for event in sample_events if event[0] == 'note_on']
 
 
