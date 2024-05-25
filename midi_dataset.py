@@ -3,7 +3,7 @@ import torch
 import os
 from torch.utils.data import DataLoader, Dataset
 
-from data_conversion import midi_to_event_sequence, events_to_token_sequence
+from data_conversion import midi_to_event_sequences, events_to_token_sequence, SEQUENCE_DURATION
 
 
 class MIDIDataset(Dataset):
@@ -16,23 +16,20 @@ class MIDIDataset(Dataset):
         if data_root is not None:
             for filename in os.listdir(data_root):
                 filepath = os.path.join(data_root, filename)
-                event_sequence = midi_to_event_sequence(filepath)
-                token_sequence = events_to_token_sequence(event_sequence)
-                self.sequences.append(torch.tensor(token_sequence, dtype=torch.long))
+                event_sequences = midi_to_event_sequences(filepath)
+                for event_sequence in event_sequences:
+                    token_sequence = events_to_token_sequence(event_sequence)
+                    token_sequence = token_sequence.unsqueeze(-1)
+                    token_sequence = token_sequence.transpose(0, 1)
+                    self.sequences.append(torch.tensor(token_sequence, dtype=torch.float16))
 
-        max_length = max(len(seq) for seq in self.sequences)
-        # Make sure that length is divisible by 16
-        self.max_length = max_length + 16 - (max_length % 16)
+        self.max_length = SEQUENCE_DURATION
 
     def __len__(self):
         return len(self.sequences)
 
     def __getitem__(self, idx):
-        seq = self.sequences[idx]
-        seq = seq.unsqueeze(-1)
-        padded_seq = torch.nn.functional.pad(seq, (0, 0, 0, self.max_length - len(seq)), value=0)
-        transposed_seq = padded_seq.transpose(0, 1)
-        return transposed_seq
+        return self.sequences[idx]
 
     def save_dataset(self, file_path):
         torch.save({

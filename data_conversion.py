@@ -1,21 +1,25 @@
 import pretty_midi
 
-TIME_SHIFT_RESOLUTION = 0.01
-NOTE_ON_FLAG = 0.0
-NOTE_OFF_FLAG = 128.0
-TIME_SHIFT_FLAG = 256.0
+TIME_SHIFT_RESOLUTION = 0.002
+NOTE_ON_FLAG = 0
+NOTE_OFF_FLAG = 128
+TIME_SHIFT_FLAG = 256
+
+# Equal to 4 bars
+SEQUENCE_DURATION = 10000
 
 
-def midi_to_event_sequence(midi_file_path):
+def midi_to_event_sequences(midi_file_path):
     midi_data = pretty_midi.PrettyMIDI(midi_file_path)
     events = []
     for instrument in midi_data.instruments:
         for note in instrument.notes:
             events.append(('note_on', note.start, note.pitch))
             events.append(('note_off', note.end, note.pitch))
-    events.sort(key=lambda x: x[1])
+    events.sort(key=lambda x: (x[1], x[0] != 'note_on'))
 
     last_time = 0
+    event_sequences = []
     event_sequence = []
     for event in events:
         event_time = event[1]
@@ -25,13 +29,19 @@ def midi_to_event_sequence(midi_file_path):
             time_shift_steps = int(time_shift // TIME_SHIFT_RESOLUTION)
             for _ in range(time_shift_steps):
                 event_sequence.append(('time_shift', TIME_SHIFT_RESOLUTION))
+
+                if len(event_sequence) > SEQUENCE_DURATION:
+                    event_sequences.append(event_sequence)
+                    event_sequence = []
+
         event_sequence.append(event)
         last_time = event_time
 
-        if len(event_sequence) > 10000:
-            return event_sequence
+        if len(event_sequence) > SEQUENCE_DURATION:
+            event_sequences.append(event_sequence)
+            event_sequence = []
 
-    return event_sequence
+    return event_sequences
 
 
 def events_to_token_sequence(event_sequence):
@@ -39,12 +49,16 @@ def events_to_token_sequence(event_sequence):
 
 
 def tokenize_event(event):
+    symbol = 0
+
     if event[0] == 'note_on':
-        return NOTE_ON_FLAG + event[2]
+        symbol = NOTE_ON_FLAG + event[2]
     elif event[0] == 'note_off':
-        return NOTE_OFF_FLAG + event[2]
+        symbol = NOTE_OFF_FLAG + event[2]
     elif event[0] == 'time_shift':
-        return TIME_SHIFT_FLAG + int(event[1] / TIME_SHIFT_RESOLUTION)
+        symbol = TIME_SHIFT_FLAG
+
+    return symbol / TIME_SHIFT_FLAG
 
 
 VELOCITY_BASE = 64
@@ -116,10 +130,12 @@ def token_sequence_to_events(token_sequence):
 
 
 def detokenize_event(token):
+    token = round(token * TIME_SHIFT_FLAG)
+
     if NOTE_ON_FLAG <= token < NOTE_OFF_FLAG:
         return ['note_on', token - NOTE_ON_FLAG]
     elif NOTE_OFF_FLAG <= token < TIME_SHIFT_FLAG:
         return ['note_off', token - NOTE_OFF_FLAG]
     elif TIME_SHIFT_FLAG <= token:
-        time_shift = (token - TIME_SHIFT_FLAG) * TIME_SHIFT_RESOLUTION
+        time_shift = TIME_SHIFT_RESOLUTION
         return ['time_shift', time_shift]
