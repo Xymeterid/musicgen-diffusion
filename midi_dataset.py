@@ -19,9 +19,10 @@ class MIDIDataset(Dataset):
                 event_sequences = midi_to_event_sequences(filepath)
                 for event_sequence in event_sequences:
                     token_sequence = events_to_token_sequence(event_sequence)
-                    token_sequence = token_sequence.unsqueeze(-1)
-                    token_sequence = token_sequence.transpose(0, 1)
-                    self.sequences.append(torch.tensor(token_sequence, dtype=torch.float16))
+                    tensor = torch.tensor(token_sequence, dtype=torch.float16)
+                    tensor = tensor.unsqueeze(-1)
+                    tensor = tensor.transpose(0, 1)
+                    self.sequences.append(tensor)
 
         self.max_length = SEQUENCE_DURATION
 

@@ -30,14 +30,14 @@ def midi_to_event_sequences(midi_file_path):
             for _ in range(time_shift_steps):
                 event_sequence.append(('time_shift', TIME_SHIFT_RESOLUTION))
 
-                if len(event_sequence) > SEQUENCE_DURATION:
+                if len(event_sequence) >= SEQUENCE_DURATION:
                     event_sequences.append(event_sequence)
                     event_sequence = []
 
         event_sequence.append(event)
         last_time = event_time
 
-        if len(event_sequence) > SEQUENCE_DURATION:
+        if len(event_sequence) >= SEQUENCE_DURATION:
             event_sequences.append(event_sequence)
             event_sequence = []
 
