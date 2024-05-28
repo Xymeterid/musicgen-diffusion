@@ -1,7 +1,6 @@
 import torch
-from denoising_diffusion_pytorch import Unet1D, GaussianDiffusion1D, Trainer1D
+from denoising_diffusion_pytorch import Unet1D, GaussianDiffusion1D
 
-from analytics import pitch_class_histogram_distances, calculate_pitch_class_distance_histogram
 from midi_dataset import MIDIDataset
 from midi_trainer import MIDITrainer1D
 
